@@ -1,0 +1,38 @@
+# https://docs.microsoft.com/en-us/microsoft-365/security/defender-endpoint/command-line-arguments-microsoft-defender-antivirus?view=o365-worldwide
+name: Test Nim with Windows Defender
+on: [push]
+jobs:
+  run:
+    runs-on: windows-latest
+    steps:
+      - name: checkout
+        uses: actions/checkout@v2
+      - name: start Windows Defender service
+        shell: powershell
+        run: 'Set-Service -Name wuauserv -StartupType Manual -Status Running'
+      - name: update signatures
+        shell: cmd
+        run: '"C:\Program Files\Windows Defender\MpCmdRun.exe" -SignatureUpdate'
+      - name: fetch x64 archive from nim-lang.org
+        shell: powershell
+        run: |
+            Invoke-WebRequest https://nim-lang.org/download/nim-1.4.6_x64.zip -OutFile nim-1.4.6_x64.zip
+            Invoke-WebRequest https://nim-lang.org/download/nim-1.6.6_x64.zip -OutFile nim-1.6.6_x64.zip
+      - name: scan x64 archive from nim-lang.org
+        shell: cmd
+        run: |
+            "C:\Program Files\Windows Defender\MpCmdRun.exe" -Scan -ScanType 3 -DisableRemediation -File "%CD%\nim-1.4.6_x64.zip"
+            "C:\Program Files\Windows Defender\MpCmdRun.exe" -Scan -ScanType 3 -DisableRemediation -File "%CD%\nim-1.6.6_x64.zip"
+            7z x nim-1.6.6_x64.zip
+            "nim-1.6.6\bin\nim" c --mm:refc evil
+            "C:\Program Files\Windows Defender\MpCmdRun.exe" -Scan -ScanType 3 -DisableRemediation -File "%CD%\evil.exe"
+            "nim-1.6.6\bin\nim" c --mm:arc evil
+            "C:\Program Files\Windows Defender\MpCmdRun.exe" -Scan -ScanType 3 -DisableRemediation -File "%CD%\evil.exe"
+            "nim-1.6.6\bin\nim" c --mm:orc evil
+            "C:\Program Files\Windows Defender\MpCmdRun.exe" -Scan -ScanType 3 -DisableRemediation -File "%CD%\evil.exe"
+            "nim-1.6.6\bin\nim" c --mm:refc -d:debug evil
+            "C:\Program Files\Windows Defender\MpCmdRun.exe" -Scan -ScanType 3 -DisableRemediation -File "%CD%\evil.exe"
+            "nim-1.6.6\bin\nim" c --mm:arc -d:debug evil
+            "C:\Program Files\Windows Defender\MpCmdRun.exe" -Scan -ScanType 3 -DisableRemediation -File "%CD%\evil.exe"
+            "nim-1.6.6\bin\nim" c --mm:orc -d:debug evil
+            "C:\Program Files\Windows Defender\MpCmdRun.exe" -Scan -ScanType 3 -DisableRemediation -File "%CD%\evil.exe"
